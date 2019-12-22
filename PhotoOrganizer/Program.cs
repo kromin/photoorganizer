@@ -8,99 +8,88 @@ using LiteDB;
 using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
 using NDesk.Options;
+using NLog;
+using Config.Net;
 
 namespace PhotoOrganizer
 {
-    public class MediaFile
+    public static class Global
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string OriginalPath { get; set; }
-        public string ArchivedPath { get; set; }
-        public string DateTimeOriginal { get; set; }
-        public byte[] MD5 { get; set; }
-    }
-    
-    class PhotoController
-    {
-        private static MD5 md5 = MD5.Create();
-
-        private readonly string _path;
-        private readonly FileStream _fileStream;
-        private readonly JpegInfo _jpegInfo;
-        private readonly byte[] _computeHash;
-
-        public PhotoController(string path)
-        {
-            _path = path;
-            _fileStream = File.Open(_path, System.IO.FileMode.Open);
-            _computeHash = md5.ComputeHash(_fileStream);
-        }
-
-        public MediaFile MakeMediaData()
-        {
-            if (_path.ToLower().EndsWith(".jpg", StringComparison.CurrentCulture))
-            {
-                var jpegInfo = ReadExifByExifLib(_fileStream);
-
-                var mediaFile = new MediaFile
-                {
-                    Name = jpegInfo.FileName,
-                    OriginalPath = _path,
-                    DateTimeOriginal = jpegInfo.DateTimeOriginal,
-                    MD5 = _computeHash
-                };
-                return mediaFile;
-            }
-
-            var directories = ImageMetadataReader.ReadMetadata(_path);
-        }
-        private static 
-        private static JpegInfo ReadExifByExifLib(FileStream _fileStream)
-        {
-            return ExifLib.ExifReader.ReadJpeg(_fileStream);
-        }
+        public static NLog.Logger Logger { get; } = LogManager.GetCurrentClassLogger();
     }
 
     class Program
     {
         static void Main(string[] args)
         {
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
-            using FileStream fs = File.Open("/Users/olegkromin/Pictures/Медиатека Фото.photoslibrary/Masters/2019/09/04/20190904-094011/787E503D-084C-4313-8EE3-4FB6FBE73442.jpg", System.IO.FileMode.Open);
-            var jpegInfo = ExifReader.ReadJpeg(fs);
-            Console.WriteLine($"{jpegInfo.DateTimeOriginal}");
-            Console.WriteLine($"{jpegInfo.Model}");
-            Console.WriteLine($"{jpegInfo.Software}");
-            using var md5 = MD5.Create();
-            var computeHash = md5.ComputeHash(fs);
-            Console.WriteLine($"{BitConverter.ToString(computeHash)}");
+            Global.Logger.Info($"Start photo organize at {DateTime.Now.ToString("dd.MM.yyyy HH:MM:ss")}");
+            
+            var dbPath = "media.db";
+            string sourceDirectory = null;
+            string destinationDirectory = null;
+            var formatDirectory = "yyyy/MM/";
+            var showHelp = false;
 
-            using var db = new LiteDatabase(@"Filename=Photo.db; Mode=Exclusive");
-            // Get customer collection
-            var photos = db.GetCollection<Photo>("photos");
-
-            // Create your new customer instance
-            var photo = new Photo
-            {
-                Name = jpegInfo.FileName,
-                OriginalPath = fs.Name,
-                DateTimeOriginal = jpegInfo.DateTimeOriginal,
-                MD5 = computeHash
+            var options = new OptionSet() {
+                { "db=", $"Path to {{DB}} file default: {dbPath}", v => dbPath = v },
+                { "s|source=","{Source} directory with media files", v => sourceDirectory = v },
+                { "d|dest=", "{Destination} directory where storage media files", v => destinationDirectory = v },
+                { "f|format=", $"{{Format}} output directory default {formatDirectory}", v => formatDirectory = v},
+                { "h|help",  "Show this message and exit", v => showHelp = v != null },
             };
-            var result = photos.Find(Query.EQ("MD5", computeHash));
-            if (result.Any()) {
-                Console.WriteLine($"Founded!");
+            try
+            {
+                options.Parse(args);
+            }
+            catch (OptionException e)
+            {
+                Console.Write("Wrong args: ");
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Try '--help' for more information.");
+                
                 return;
             }
-            // Insert new customer document (Id will be auto-incremented)
-            photos.Insert(photo);
-            Console.WriteLine($"Added! Total { photos.Count()}");
+            if (string.IsNullOrEmpty(sourceDirectory) || string.IsNullOrEmpty(destinationDirectory))
+            {
+                Global.Logger.Error("Source and Dest requred!");
+                showHelp = true;
+            }
+            if (showHelp)
+            {
+                options.WriteOptionDescriptions(Console.Out);
+                return;
+            }
+
+
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            Global.Logger.Info($"Parametres " +
+                $"dbPath={dbPath}, " +
+                $"formatDirectory={formatDirectory}, " +
+                $"sourceDirectory={sourceDirectory}, " +
+                $"destinationDirectory={destinationDirectory}, " +
+                $"formatDirectory={formatDirectory}");
+
+            var dataStorage = new DataStorageManager(dbPath);
+            var pathRules = new PathRules(formatDirectory);
+            var mediaMover = new MediaMoverController(pathRules, dataStorage.CheckExists, dataStorage.Save);
+            if (!System.IO.Directory.Exists(sourceDirectory))
+            {
+                Global.Logger.Error($"Source directory: {sourceDirectory} not found");
+                return;
+            }
+            var fileEntries = System.IO.Directory.EnumerateFiles(sourceDirectory);
+            Global.Logger.Info($"Source direstory file count: {fileEntries.Count()}");
+            foreach (string fileName in fileEntries)
+            {
+                var result = mediaMover.Move(new PhotoController(fileName).MakeMediaData());
+                Global.Logger.Info($"{fileName} copy to {result}");
+            }
 
             stopWatch.Stop();
-            Console.WriteLine($"{stopWatch.Elapsed.ToString()}");
+            Global.Logger.Info($"Time elapsed: {stopWatch.Elapsed.ToString()}");
 
         }
+        
     }
 }

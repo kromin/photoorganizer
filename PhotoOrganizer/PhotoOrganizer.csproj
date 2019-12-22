@@ -10,5 +10,8 @@
     <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
     <PackageReference Include="MetadataExtractor" Version="2.2.0" />
+    <PackageReference Include="NLog" Version="4.6.8" />
+    <PackageReference Include="NLog.Config" Version="4.6.8" />
+    <PackageReference Include="Config.Net" Version="4.14.16" />
   </ItemGroup>
 </Project>

@@ -33,8 +33,9 @@ namespace PhotoOrganizer
             {
                 Media.Insert(mediaFile);
             }
-            catch (LiteException)
+            catch (LiteException e)
             {
+                Global.Logger.Fatal($"DB ERROR:{e.Message}");
                 return false;
             }
             return true;

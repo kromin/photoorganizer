@@ -13,47 +13,38 @@ namespace PhotoOrganizer
         private static readonly MD5 md5 = MD5.Create();
 
         private readonly string _path;
-        private readonly FileStream _fileStream;
-        private readonly byte[] _computeHash;
 
         public PhotoController(string path)
         {
             _path = path;
-            _fileStream = File.Open(_path, FileMode.Open);
-            _computeHash = md5.ComputeHash(_fileStream);
         }
 
         public MediaFile MakeMediaData()
         {
-            if (_path.ToLower().EndsWith(".jpg", StringComparison.CurrentCulture))
+            var directory = ReadExifByMetaDataExtractor(_path);
+            var fileName = Path.GetFileName(_path);
+            directory.TryGetDateTime(ExifDirectoryBase.TagDateTimeOriginal, out var dateTime);
+            byte[] computeHash;
+            using (var fs = File.Open(_path, FileMode.Open))
             {
-                var jpegInfo = ReadExifByExifLib(_fileStream);
-                DateTime.TryParse(jpegInfo.DateTimeOriginal, out var dateTimeExtracted);
-                var mediaFileFromExifLib = new MediaFile
-                {
-                    Name = jpegInfo.FileName,
-                    OriginalPath = _path,
-                    DateTimeOriginal = dateTimeExtracted,
-                    MD5 = _computeHash
-                };
-                return mediaFileFromExifLib;
+                computeHash = md5.ComputeHash(fs);
             }
 
-            var directory = ReadExifByMetaDataExtractor(_path);
-            var fileName = directory.GetStringValue(ExifDirectoryBase.TagDocumentName);
-            directory.TryGetDateTime(ExifDirectoryBase.TagDateTimeOriginal, out var dateTime);
             var mediaFile = new MediaFile
             {
-                Name = fileName.ToString(),
+                Name = fileName,
                 OriginalPath = _path,
                 DateTimeOriginal = dateTime,
-                MD5 = _computeHash
+                MD5 = computeHash
             };
+
+            Global.Logger.Trace($"File: {_path} original datetime: {dateTime.ToString()}");
             return mediaFile;
         }
 
         private static MetadataExtractor.Directory ReadExifByMetaDataExtractor(string path)
         {
+            Global.Logger.Trace($"Extract by MetadataExtractor: {path}");
             var directories = ImageMetadataReader.ReadMetadata(path);
             var directory = directories.OfType<ExifSubIfdDirectory>().FirstOrDefault();
 
@@ -61,11 +52,6 @@ namespace PhotoOrganizer
                 return null;
 
             return directory;
-        }
-
-        private static JpegInfo ReadExifByExifLib(FileStream _fileStream)
-        {
-            return ExifLib.ExifReader.ReadJpeg(_fileStream);
         }
     }
 }

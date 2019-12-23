@@ -1,8 +1,6 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using ExifLib;
 using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
 

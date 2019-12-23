@@ -41,6 +41,7 @@ namespace PhotoOrganizer
             try
             {
                 File.Copy(mediaFile.OriginalPath, mediaFile.ArchivedPath);
+                Global.Logger.Info($"File {mediaFile.OriginalPath} copy to {mediaFile.ArchivedPath} success!");
             }
             catch (Exception e)
             {

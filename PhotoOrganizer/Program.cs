@@ -45,8 +45,7 @@ namespace PhotoOrganizer
             Global.Logger.Info($"Start photo organize at {DateTime.Now.ToString("dd.MM.yyyy HH:MM:ss")}");
             ISettings settings = new ConfigurationBuilder<ISettings>().UseAppConfig().Build();
             Global.Logger.Info($"Config: DataBasePath={settings.DataBasePath}, FormatOutputDirectory={settings.FormatOutputDirectory}, SupportFormat={settings.SupportFormat}");
-            
-            var dbPath = settings.DataBasePath;
+
             string sourceDirectory = null;
             string destinationDirectory = null;
             var formatDirectory = settings.FormatOutputDirectory;
@@ -55,10 +54,8 @@ namespace PhotoOrganizer
             var showHelp = false;
 
             var options = new OptionSet() {
-                { "db=", $"Path to {{DB}} file default: {dbPath}", v => dbPath = v },
                 { "s|source=","{Source} directory with media files", v => sourceDirectory = v },
                 { "d|dest=", "{Destination} directory where storage media files", v => destinationDirectory = v },
-                { "f|format=", $"{{Format}} output directory default {formatDirectory}", v => formatDirectory = v},
                 { "h|help",  "Show this message and exit", v => showHelp = v != null },
             };
 
@@ -85,9 +82,16 @@ namespace PhotoOrganizer
                 return;
             }
 
-
+            if(!Directory.Exists(destinationDirectory))
+            {
+                Global.Logger.Warn($"Output directory '{destinationDirectory}' does not exsist, make him!");
+                Directory.CreateDirectory(destinationDirectory);
+            }
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
+
+            var dbPath =  Path.Combine(destinationDirectory, settings.DataBasePath);
+
             Global.Logger.Info($"Parametres " +
                 $"dbPath={dbPath}, " +
                 $"formatDirectory={formatDirectory}, " +
@@ -96,9 +100,27 @@ namespace PhotoOrganizer
                 $"formatDirectory={formatDirectory}");
 
             var dataStorage = new DataStorageManager(dbPath);
+
+            var indexInfo = dataStorage.ReadIndexInfo();
+            if (indexInfo == null)
+            {
+                Global.Logger.Warn($"Settings in {dbPath} not found, may be first request");
+                indexInfo = new IndexInfo
+                {
+                    DateTimeCreateIndex = DateTime.Now,
+                    FormatOutputDirectory = formatDirectory
+                };
+            }
+
+            if(!indexInfo.FormatOutputDirectory.Equals(formatDirectory))
+            {
+                Global.Logger.Error($"Format output directory from Index('{indexInfo.FormatOutputDirectory}') not equal format from settings('{formatDirectory}')");
+                return;
+            }
+
             var pathRules = new PathRules(destinationDirectory, formatDirectory);
             var mediaMover = new MediaMoverController(pathRules, dataStorage.CheckExists, dataStorage.Save);
-            if (!System.IO.Directory.Exists(sourceDirectory))
+            if (!Directory.Exists(sourceDirectory))
             {
                 Global.Logger.Error($"Source directory: {sourceDirectory} not found");
                 return;
@@ -106,6 +128,7 @@ namespace PhotoOrganizer
 
             var fileEntries = GetAllFiles(sourceDirectory, (info) => supportedFormat.Contains(Path.GetExtension(info.Name).ToLower()));
             Global.Logger.Info($"Source direstory file count: {fileEntries.Count()}");
+            Global.Logger.Info($"Current index file count: {indexInfo.LastCount}");
             foreach (string fileName in fileEntries)
             {
                 var result = mediaMover.Move(new PhotoController(fileName).MakeMediaData());
@@ -115,7 +138,11 @@ namespace PhotoOrganizer
                     continue;
                 }
             }
-
+            var indexCount = dataStorage.Media.Count();
+            Global.Logger.Info($"Was added new file: { indexCount - indexInfo.LastCount}");
+            indexInfo.LastCount = indexCount;
+            indexInfo.DateTimeLastUpdate = DateTime.Now;
+            dataStorage.InsertOrUpdate(indexInfo);
             stopWatch.Stop();
             Global.Logger.Info($"Time elapsed: {stopWatch.Elapsed.ToString()}");
 

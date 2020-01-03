@@ -3,6 +3,18 @@ using System.IO;
 
 namespace PhotoOrganizer
 {
+    public static class ExtendDateFormat
+    {
+        private static readonly string ErrorPath = "ProblemsFile";
+        public static string ToString(this DateTime? time, string format) 
+        {
+            if (time.HasValue) 
+            {
+                return time.Value.ToString(format);
+            }
+            return ErrorPath;
+        }
+    }
     class PathRules
     {
         private readonly string _outputDirectory;

@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "PhotoOrganizer": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Oleg\\photoorganizer\\PhotoOrganizer\\bin\\Debug\\netcoreapp3.0\\PhotoOrganizer.exe",
+      "commandLineArgs": "-s=C:\\Foto\\OlegCloud\\ -d=C:\\Foto\\test\\"
+    },
+    "newProfile1": {
+      "commandName": "Project"
+    }
+  }
+}

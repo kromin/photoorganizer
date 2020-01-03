@@ -140,6 +140,8 @@ namespace PhotoOrganizer
             }
             var indexCount = dataStorage.Media.Count();
             Global.Logger.Info($"Was added new file: { indexCount - indexInfo.LastCount}");
+            var indexCountWithProblem = dataStorage.Media.Find(x => !x.DateTimeOriginal.HasValue);
+            Global.Logger.Warn($"Problem file: { indexCountWithProblem }");
             indexInfo.LastCount = indexCount;
             indexInfo.DateTimeLastUpdate = DateTime.Now;
             dataStorage.InsertOrUpdate(indexInfo);

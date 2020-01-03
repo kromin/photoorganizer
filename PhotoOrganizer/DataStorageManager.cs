@@ -42,11 +42,11 @@ namespace PhotoOrganizer
             if(result == null)
             {
                 db.GetCollection<IndexInfo>("IndexInfo").Insert(info);
-                Global.Logger.Error($"DB IndexInfo inserted!");
+                Global.Logger.Info($"DB IndexInfo inserted!");
                 return;
             }
             db.GetCollection<IndexInfo>("IndexInfo").Update(info);
-            Global.Logger.Error($"DB IndexInfo updated!");
+            Global.Logger.Info($"DB IndexInfo updated!");
         }
 
         public LiteCollection<MediaFile> Media

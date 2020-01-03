@@ -9,6 +9,7 @@ namespace PhotoOrganizer
         public string OriginalPath { get; set; }
         public string ArchivedPath { get; set; }
         public DateTime? DateTimeOriginal { get; set; }
+        public int DuplicateName { get; set; }
         public byte[] MD5 { get; set; }
     }
 }

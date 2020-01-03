@@ -17,7 +17,7 @@ namespace PhotoOrganizer
 
         private MediaFile PrepareToMove(MediaFile mediaFile)
         {
-            mediaFile.ArchivedPath = _pathRules.MakePath(mediaFile);
+            mediaFile.ArchivedPath = _pathRules.MakePath(ref mediaFile);
             if (_isAllreadyInDB(mediaFile))
             {
                 Global.Logger.Info($"File {mediaFile.OriginalPath} allready in DB!");

@@ -13,19 +13,8 @@ namespace PhotoOrganizer
     {
         public static NLog.Logger Logger { get; } = LogManager.GetCurrentClassLogger();
     }
-
-    public interface ISettings
-    {
-        string DataBasePath { get; }
-
-        string FormatOutputDirectory { get; }
-
-        string SupportFormat { get; }
-    }
-
     class Program
     {
-
         public static IEnumerable<string> GetAllFiles(string path, Func<FileInfo, bool> checkFile = null)
         {
             string mask = Path.GetFileName(path);
@@ -44,7 +33,12 @@ namespace PhotoOrganizer
         {
             Global.Logger.Info($"Start photo organize at {DateTime.Now.ToString("dd.MM.yyyy HH:MM:ss")}");
             ISettings settings = new ConfigurationBuilder<ISettings>().UseAppConfig().Build();
-            Global.Logger.Info($"Config: DataBasePath={settings.DataBasePath}, FormatOutputDirectory={settings.FormatOutputDirectory}, SupportFormat={settings.SupportFormat}");
+            Global.Logger.Info($"Config: " +
+                $" DataBasePath={settings.DataBasePath}," +
+                $" FormatOutputDirectory={settings.FormatOutputDirectory}," +
+                $" FormatOutputFileName={settings.FormatOutputFileName}," +
+                $" CultureInfo={settings.CultureInfo}," + 
+                $" SupportFormat={settings.SupportFormat}");
 
             string sourceDirectory = null;
             string destinationDirectory = null;
@@ -118,7 +112,7 @@ namespace PhotoOrganizer
                 return;
             }
 
-            var pathRules = new PathRules(destinationDirectory, formatDirectory);
+            var pathRules = new PathRules(destinationDirectory, settings);
             var mediaMover = new MediaMoverController(pathRules, dataStorage.CheckExists, dataStorage.Save);
             if (!Directory.Exists(sourceDirectory))
             {

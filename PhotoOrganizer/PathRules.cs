@@ -1,16 +1,18 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 
 namespace PhotoOrganizer
 {
     public static class ExtendDateFormat
     {
         private static readonly string ErrorPath = "ProblemsFile";
-        public static string ToString(this DateTime? time, string format) 
+        public static string ToString(this DateTime? time, string format, string cultureInfo) 
         {
             if (time.HasValue) 
             {
-                return time.Value.ToString(format);
+                return time.Value.ToString(format, CultureInfo.CreateSpecificCulture(cultureInfo));
             }
             return ErrorPath;
         }
@@ -18,22 +20,45 @@ namespace PhotoOrganizer
     class PathRules
     {
         private readonly string _outputDirectory;
-        private readonly string _outputFormat;
-
-        public PathRules(string outputDirectory, string outputFormat)
+        private readonly string[] _outputFormat;
+        private readonly string _outputFormatFileName;
+        private readonly string _cultureInfo;
+        public PathRules(string outputDirectory, ISettings settings)
         {
             _outputDirectory = outputDirectory;
-            _outputFormat = outputFormat;
+            _outputFormat = settings.FormatOutputDirectory.Split('|');
+            _cultureInfo = settings.CultureInfo;
+            _outputFormatFileName = settings.FormatOutputFileName;
         }
 
-        public string MakePath(MediaFile mediaFile)
+        public string MakePath(ref MediaFile mediaFile)
         {
-            var result = Path.Combine(new string[] { _outputDirectory, mediaFile.DateTimeOriginal.ToString(_outputFormat), mediaFile.Name });
+            var result = CheckAndMake(ref mediaFile);
             Global.Logger.Trace($"Formatted path {result}");
 
             var onlyDirectory = Path.GetDirectoryName(result);
             Directory.CreateDirectory(onlyDirectory);
             Global.Logger.Trace($"Create directory {onlyDirectory}");
+            return result;
+        }
+
+        private string CheckAndMake(ref MediaFile mediaFile) 
+        {
+            var extensionOriginalFile = new FileInfo(mediaFile.Name).Extension;
+            var makeNewFileName = $"{mediaFile.DateTimeOriginal.ToString(Path.Combine(_outputFormatFileName), _cultureInfo)}_{mediaFile.DuplicateName}{extensionOriginalFile}";
+            var originalDateTime = mediaFile.DateTimeOriginal;
+            var outputFormattedPath = _outputFormat.Select(item => originalDateTime.ToString(item, _cultureInfo));
+            var result = Path.Combine(new string[]
+            {
+                _outputDirectory,
+                Path.Combine(outputFormattedPath.ToArray()),
+                makeNewFileName
+            });
+            if (File.Exists(result))
+            {
+                mediaFile.DuplicateName += 1;
+                return CheckAndMake(ref mediaFile);
+            }
             return result;
         }
     }

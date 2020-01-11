@@ -57,9 +57,11 @@ namespace PhotoOrganizer
             }
         }
 
-        public bool CheckExists(MediaFile mediaFile)
+        public string CheckExists(MediaFile mediaFile)
         {
-            return Media.Find(Query.EQ("MD5", mediaFile.MD5)).Any();
+            var result = Media.Find(Query.EQ("MD5", mediaFile.MD5));
+            if (!result.Any()) { return null; }
+            return result.Last().ArchivedPath;
         }
 
 

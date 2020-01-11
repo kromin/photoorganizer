@@ -6,9 +6,9 @@ namespace PhotoOrganizer
     class MediaMoverController
     {
         private readonly PathRules _pathRules;
-        private readonly Func<MediaFile, bool> _isAllreadyInDB;
+        private readonly Func<MediaFile, string> _isAllreadyInDB;
         private readonly Func<MediaFile, bool> _saveInDb;
-        public MediaMoverController(PathRules pathRules, Func<MediaFile, bool> isAllreadyInDB, Func<MediaFile, bool> saveInDb)
+        public MediaMoverController(PathRules pathRules, Func<MediaFile, string> isAllreadyInDB, Func<MediaFile, bool> saveInDb)
         {
             _pathRules = pathRules;
             _isAllreadyInDB = isAllreadyInDB;
@@ -18,14 +18,17 @@ namespace PhotoOrganizer
         private MediaFile PrepareToMove(MediaFile mediaFile)
         {
             mediaFile.ArchivedPath = _pathRules.MakePath(ref mediaFile);
-            if (_isAllreadyInDB(mediaFile))
+            var allreadyInDbPath = _isAllreadyInDB(mediaFile);
+            if (!string.IsNullOrEmpty(allreadyInDbPath))
             {
-                Global.Logger.Info($"File {mediaFile.OriginalPath} allready in DB!");
-                if (IsArchivedExists(mediaFile.ArchivedPath))
+                Global.Logger.Info($"File {mediaFile.OriginalPath} allready in DB with archived path {allreadyInDbPath}!");
+                if (IsArchivedExists(allreadyInDbPath))
                 {
                     Global.Logger.Info($"File {mediaFile.OriginalPath} allready in {mediaFile.ArchivedPath}, nothing to do");
                     return null;
                 }
+                mediaFile.ArchivedPath = allreadyInDbPath;
+                Global.Logger.Warn($"File {mediaFile.OriginalPath} not found in {mediaFile.ArchivedPath}, copy file");
                 return mediaFile;
             }
             return mediaFile;

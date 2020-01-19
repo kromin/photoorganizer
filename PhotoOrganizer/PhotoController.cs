@@ -32,7 +32,7 @@ namespace PhotoOrganizer
         {
             DateTime? dateTime = @this.GetCreationTime(path);
             if (dateTime.HasValue) { return dateTime; }
-            dateTime = @this.GetTimeByTag("CreateDate", path);
+            dateTime = @this.GetTimeByTag("CreateDate", path) ?? File.GetLastWriteTime(path);
             return dateTime;
         }
     }

@@ -17,13 +17,15 @@ namespace PhotoOrganizer
     {
         public static IEnumerable<string> GetAllFiles(string path, Func<FileInfo, bool> checkFile = null)
         {
-            string mask = Path.GetFileName(path);
-            if (string.IsNullOrEmpty(mask))
-                mask = "*.*";
-            path = Path.GetDirectoryName(path);
-            string[] files = Directory.GetFiles(path, mask, SearchOption.AllDirectories);
+            //string mask = Path.GetFileName(path);
+            //if (string.IsNullOrEmpty(mask))
+            string mask = "*.*";
+            //path = Path.GetDirectoryName(path);
+            Global.Logger.Info($"Enumerate files in '{path}' with mask '{mask}'");
+            var files = Directory.EnumerateFiles(path, mask, SearchOption.AllDirectories);
             foreach (string file in files)
             {
+                Global.Logger.Info($"Check file {file}...");
                 if (checkFile == null || checkFile(new FileInfo(file)))
                     yield return file;
             }
@@ -95,6 +97,7 @@ namespace PhotoOrganizer
 
             var dataStorage = new DataStorageManager(dbPath);
 
+            Global.Logger.Info($"Read index file...");
             var indexInfo = dataStorage.ReadIndexInfo();
             if (indexInfo == null)
             {
@@ -106,6 +109,7 @@ namespace PhotoOrganizer
                 };
             }
 
+            Global.Logger.Info($"Check format output...");
             if(!indexInfo.FormatOutputDirectory.Equals(formatDirectory))
             {
                 Global.Logger.Error($"Format output directory from Index('{indexInfo.FormatOutputDirectory}') not equal format from settings('{formatDirectory}')");
@@ -119,6 +123,7 @@ namespace PhotoOrganizer
                 Global.Logger.Error($"Source directory: {sourceDirectory} not found");
                 return;
             }
+            Global.Logger.Info($"Source directory file counting...");
 
             var fileEntries = GetAllFiles(sourceDirectory, (info) => supportedFormat.Contains(Path.GetExtension(info.Name).ToLower()));
             Global.Logger.Info($"Source direstory file count: {fileEntries.Count()}");
@@ -135,7 +140,7 @@ namespace PhotoOrganizer
             var indexCount = dataStorage.Media.Count();
             Global.Logger.Info($"Was added new file: { indexCount - indexInfo.LastCount}");
             var indexCountWithProblem = dataStorage.Media.Find(x => !x.DateTimeOriginal.HasValue);
-            Global.Logger.Warn($"Problem file: { indexCountWithProblem }");
+            Global.Logger.Warn($"Problem file: { indexCountWithProblem.Count() }");
             indexInfo.LastCount = indexCount;
             indexInfo.DateTimeLastUpdate = DateTime.Now;
             dataStorage.InsertOrUpdate(indexInfo);

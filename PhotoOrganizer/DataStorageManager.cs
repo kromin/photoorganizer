@@ -49,7 +49,7 @@ namespace PhotoOrganizer
             Global.Logger.Info($"DB IndexInfo updated!");
         }
 
-        public LiteCollection<MediaFile> Media
+        public ILiteCollection<MediaFile> Media
         {
             get
             {

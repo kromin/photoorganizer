@@ -8,11 +8,16 @@ namespace PhotoOrganizer
     public static class ExtendDateFormat
     {
         private static readonly string ErrorPath = "ProblemsFile";
-        public static string ToString(this DateTime? time, string format, string cultureInfo) 
+        public static string ToString(this DateTime? time, string format, string cultureInfoName) 
         {
             if (time.HasValue) 
             {
-                return time.Value.ToString(format, CultureInfo.CreateSpecificCulture(cultureInfo));
+                var cultureInfo = CultureInfo.CreateSpecificCulture(cultureInfoName);
+                cultureInfo.DateTimeFormat.MonthNames = 
+                  cultureInfo.DateTimeFormat.MonthNames.Select(m => cultureInfo.TextInfo.ToTitleCase(m)).ToArray();
+                cultureInfo.DateTimeFormat.MonthGenitiveNames = 
+                  cultureInfo.DateTimeFormat.MonthGenitiveNames.Select(m => cultureInfo.TextInfo.ToTitleCase(m)).ToArray();
+                return time.Value.ToString(format, cultureInfo);
             }
             return ErrorPath;
         }

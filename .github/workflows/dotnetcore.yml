@@ -23,4 +23,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: PhotoOrganizerRelease
-        path: PhotoOrganizer/bin/Release/netcoreapp3.0/publish/
+        path: PhotoOrganizer/bin/Release/netcoreapp7.0/publish/

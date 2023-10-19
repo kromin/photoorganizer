@@ -1,24 +1,26 @@
-name: .NET Core
-
-on: [push]
-
+name: .NET Core Build
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+      
 jobs:
   build:
-
-    runs-on: windows-latest
-
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 3.0.101
+        dotnet-version: 7.0.x
     - name: Build with dotnet
       run: dotnet build --configuration Release
     - name: Publish artifacts
       run: dotnet publish --configuration Release
     - name: Upload artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
         name: PhotoOrganizerRelease
         path: PhotoOrganizer/bin/Release/netcoreapp3.0/publish/

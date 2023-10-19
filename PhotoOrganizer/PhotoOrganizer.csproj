@@ -6,6 +6,7 @@
     <StartupObject>PhotoOrganizer.Program</StartupObject>
     <ApplicationIcon />
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

@@ -51,7 +51,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v3
       with:
-        images: olegkromin/my-docker-hub-repository
+        images: olegkromin/photoorganizer
     
     - name: Build and push Docker image
       uses: docker/build-push-action@v3

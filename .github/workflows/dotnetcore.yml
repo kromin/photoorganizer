@@ -24,3 +24,19 @@ jobs:
       with:
         name: PhotoOrganizerRelease
         path: PhotoOrganizer/bin/Release/netcoreapp7.0/publish/
+  
+  alpine:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - uses: jirutka/setup-alpine@v1
+      with:
+        packages: >
+          apk add dotnet7-sdk
+        
+    - name: Build on Alpine
+      run: |
+        cat /etc/alpine-release
+        dotnet build --configuration Release
+      shell: alpine.sh {0}

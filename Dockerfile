@@ -1,10 +1,10 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0-jammy-amd64  AS dotnet70
-ENV DEBIAN_FRONTEND=noninteractive
+FROM alpine:latest
+
 WORKDIR /app
-COPY ./out .
-RUN apt update
-RUN apt install -y libimage-exiftool-perl
+COPY ./PhotoOrganizer/bin/Release/netcoreapp7.0/ .
+
+RUN apk add dotnet7-runtime exiftool
 RUN rm 'exiftool(-k).exe'
 RUN ln -s /usr/bin/exiftool './exiftool(-k).exe'
 RUN ./'exiftool(-k).exe' -ver
-CMD ["./PhotoOrganizer", "-s=/cloud", "-d=/foto"]
+ENTRYPOINT ["/bin/sh"]
